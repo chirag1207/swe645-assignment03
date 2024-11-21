@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: edu.gmu.swe645.demo.SurveyService1ApplicationTests
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.339 s -- in edu.gmu.swe645.demo.SurveyService1ApplicationTests
