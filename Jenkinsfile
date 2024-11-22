@@ -4,9 +4,7 @@ pipeline {
         TIMESTAMP = new Date().format("yyyyMMdd_HHmmss")
     }
    agent any
-   tools {
-    maven 'Maven 3.9.6'
-}
+  
 
    stages {
     stage('Maven Clean') {
