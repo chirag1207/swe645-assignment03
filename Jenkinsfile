@@ -7,7 +7,7 @@ pipeline{
       DOCKERHUB_CREDENTIALS = credentials('dockerhub')
                                           }
                                           stages{
-                                             stage('BUILD){
+                                             stage('BUILD'){
                                                    steps{
                                                       sh 'maven clean package'
                                                       sh 'docker build -t chiragnarkar/swe645-assignment03:latest .'
