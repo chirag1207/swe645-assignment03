@@ -1,37 +1,53 @@
 pipeline {
-    agent any
-  
-    environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub') // Replace 'dockerhub' with the ID of your Docker Hub credentials
+   environment {
+        registryCredential = 'dockercred'
+        TIMESTAMP = new Date().format("yyyyMMdd_HHmmss")
     }
-    stages {
-        stage('Build') {
+   agent any
+   tools {
+    maven 'Maven 3.9.6'
+}
+
+   stages {
+    stage('Maven Clean') {
             steps {
-                sh 'mvn clean package' // Fixed typo ('maven' to 'mvn')
-                sh 'docker build -t chiragnarkar/swe645-assignment03:latest .'
+               script{
+                sh 'mvn clean'
+               }
             }
         }
-        stage('Login to Docker Hub') {
+        stage('Maven Install') {
             steps {
-                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+               script{
+                sh 'mvn install -DskipTests'
+            }
             }
         }
-        stage('Push Image to Docker Hub') {
-            steps {
-                sh 'docker push chiragnarkar/swe645-assignment03:latest'
+      stage('Build Docker Image') {
+         steps {
+            script{
+               docker.withRegistry('',registryCredential){
+                  def customImage = docker.build("chiragnarkar/swe645-assignment03:${env.TIMESTAMP}")
+               }
             }
-        }
-        stage('Deploy to Kubernetes') {
-            steps {
-                sh 'kubectl config use-context swe645-assignment03' // Ensure this context exists in your kubeconfig
-                sh 'kubectl set image deployment/swe645-assignment03 container-0=chiragnarkar/swe645-assignment03:latest -n default'
-                sh 'kubectl rollout restart deployment swe645-assignment03 -n default' // Corrected minor syntax
+         }
+      }
+
+      stage('Push Image to Dockerhub') {
+         steps {
+            script{
+               docker.withRegistry('',registryCredential){
+                  sh "docker push chiragnarkar/swe645-assignment03:${env.TIMESTAMP}"
+               }
             }
-        }
-    }
-    post {
-        always {
-            sh 'docker logout'
-        }
-    }
+         }
+      }
+      stage('Deploying to Rancher to single node(deployed in 3 replicas)') {
+         steps {
+            script{
+               sh "kubectl set image deployment/swe645-assignment03 container-0=chiragnarkar/swe645-assignment03:${env.TIMESTAMP} -n default"
+            }
+         }
+      }
+   }
 }
