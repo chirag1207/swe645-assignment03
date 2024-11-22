@@ -1,8 +1,6 @@
 pipeline {
     agent any
-    tools {
-        jdk 'JDK17' // Ensure "JDK17" is configured in Jenkins under Global Tool Configuration
-    }
+  
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub') // Replace 'dockerhub' with the ID of your Docker Hub credentials
     }
