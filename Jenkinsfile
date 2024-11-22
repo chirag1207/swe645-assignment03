@@ -1,51 +1,42 @@
-pipeline {
-   environment {
-        registryCredential = 'dockerhub'
-        TIMESTAMP = new Date().format("yyyyMMdd_HHmmss")
-    }
+pipeline 
    agent any
-  
-
+   tools{
+      jdk 'JDK17'
+   }
+  environment{
+     DOCKERHUB_CREDENTIALS = credentials('dockerhub')
+  }  
    stages {
-    stage('Maven Clean') {
+    stage('Build') {
             steps {
-               script{
-                sh 'mvn clean'
-               }
+                
+                sh 'mvn clean package'
+                sh 'docker build -t chiragnarkar/swe645-assignment03:latest .'
             }
         }
-        stage('Maven Install') {
+        stage('Login') {
             steps {
-               script{
-                sh 'mvn install -DskipTests'
-            }
+               
+                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin' 
             }
         }
-      stage('Build Docker Image') {
-         steps {
-            script{
-               docker.withRegistry('',registryCredential){
-                  def customImage = docker.build("chiragnarkar/swe645-assignment03:${env.TIMESTAMP}")
-               }
-            }
-         }
-      }
-
       stage('Push Image to Dockerhub') {
          steps {
-            script{
-               docker.withRegistry('',registryCredential){
-                  sh "docker push chiragnarkar/swe645-assignment03:${env.TIMESTAMP}"
-               }
-            }
+          
+                  sh 'docker push chiragnarkar/swe645-assignment03:latest'
          }
       }
-      stage('Deploying to Rancher to single node(deployed in 3 replicas)') {
+      stage('Deploying on Kubernetes') {
          steps {
-            script{
-               sh "kubectl set image deployment/swe645-assignment03 container-0=chiragnarkar/swe645-assignment03:${env.TIMESTAMP} -n default"
-            }
+           sh 'kubectl config use-context swe645-assignment03'
+            sh 'kubectl set image deployment/swe645-assignment03 container-0=chiragnarkar/swe645-assignment03:latest -n default'
+            sh 'kubectl rollout restart deployswe645-assignment03 -n default'
          }
       }
    }
+post{
+   always{
+      sh 'docker logout'
+}
+}
 }
